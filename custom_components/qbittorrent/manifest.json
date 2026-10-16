@@ -1,12 +1,19 @@
 {
   "domain": "qbittorrent",
   "name": "qBittorrent",
-  "version": "0.1.0",
-  "codeowners": ["@geoffreylagaisse", "@finder39"],
+  "codeowners": [
+    "@holdestmade"
+  ],
   "config_flow": true,
-  "documentation": "https://www.home-assistant.io/integrations/qbittorrent",
+  "documentation": "https://github.com/holdestmade/qbittorrent",
   "integration_type": "service",
   "iot_class": "local_polling",
-  "loggers": ["qbittorrent"],
-  "requirements": ["qbittorrent-api==2026.5.1"]
+  "issue_tracker": "https://github.com/holdestmade/qbittorrent/issues",
+  "loggers": [
+    "qbittorrentapi"
+  ],
+  "requirements": [
+    "qbittorrent-api>=2026.5.1"
+  ],
+  "version": "0.2.0"
 }

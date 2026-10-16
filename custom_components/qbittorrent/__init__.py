@@ -1,7 +1,5 @@
 """The qbittorrent component."""
 
-import logging
-
 from qbittorrentapi import APIConnectionError, Forbidden403Error, LoginFailed
 
 from homeassistant.const import (
@@ -21,13 +19,9 @@ from .coordinator import QBittorrentConfigEntry, QBittorrentDataCoordinator
 from .helpers import setup_client
 from .services import async_setup_services
 
-_LOGGER = logging.getLogger(__name__)
-
 CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 PLATFORMS = [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH]
-
-CONF_ENTRY = "entry"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

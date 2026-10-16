@@ -8,12 +8,10 @@ from qbittorrentapi import Client
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
-from .coordinator import QBittorrentConfigEntry, QBittorrentDataCoordinator
+from .coordinator import QBittorrentConfigEntry
+from .entity import QBittorrentEntity
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -52,27 +50,10 @@ async def async_setup_entry(
     )
 
 
-class QBittorrentButton(CoordinatorEntity[QBittorrentDataCoordinator], ButtonEntity):
+class QBittorrentButton(QBittorrentEntity, ButtonEntity):
     """Representation of a qBittorrent button."""
 
-    _attr_has_entity_name = True
     entity_description: QBittorrentButtonEntityDescription
-
-    def __init__(
-        self,
-        coordinator: QBittorrentDataCoordinator,
-        config_entry: QBittorrentConfigEntry,
-        entity_description: QBittorrentButtonEntityDescription,
-    ) -> None:
-        """Initialize the qBittorrent button."""
-        super().__init__(coordinator)
-        self.entity_description = entity_description
-        self._attr_unique_id = f"{config_entry.entry_id}-{entity_description.key}"
-        self._attr_device_info = DeviceInfo(
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, config_entry.entry_id)},
-            manufacturer="QBittorrent",
-        )
 
     @override
     async def async_press(self) -> None:
