@@ -1,5 +1,13 @@
 {
   "entity": {
+    "button": {
+      "start_all_torrents": {
+        "default": "mdi:play"
+      },
+      "stop_all_torrents": {
+        "default": "mdi:stop"
+      }
+    },
     "sensor": {
       "download_speed": {
         "default": "mdi:cloud-download"
@@ -16,11 +24,20 @@
     }
   },
   "services": {
+    "delete_torrents": {
+      "service": "mdi:delete"
+    },
     "get_all_torrents": {
       "service": "mdi:file-arrow-up-down-outline"
     },
     "get_torrents": {
       "service": "mdi:file-arrow-up-down-outline"
+    },
+    "start_torrents": {
+      "service": "mdi:play"
+    },
+    "stop_torrents": {
+      "service": "mdi:stop"
     }
   }
 }

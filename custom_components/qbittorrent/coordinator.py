@@ -1,8 +1,9 @@
 """The QBittorrent coordinator."""
 
+from collections.abc import Callable
 from datetime import timedelta
 import logging
-from typing import override
+from typing import Any, override
 
 from qbittorrentapi import (
     APIConnectionError,
@@ -16,7 +17,7 @@ from qbittorrentapi.torrents import TorrentStatusesT
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN
@@ -101,3 +102,39 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
             ) from exc
 
         return torrents
+
+    async def async_run_action(self, func: Callable[..., Any], **kwargs: Any) -> None:
+        """Run a qBittorrent client action and refresh data afterwards."""
+        try:
+            await self.hass.async_add_executor_job(lambda: func(**kwargs))
+        except (LoginFailed, Forbidden403Error) as exc:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="login_error"
+            ) from exc
+        except APIConnectionError as exc:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="cannot_connect"
+            ) from exc
+        await self.async_request_refresh()
+
+    def resolve_torrent_hashes(self, torrents: list[str]) -> list[str]:
+        """Resolve torrent names or hashes to hashes of known torrents."""
+        known = self.data.get("torrents") or {}
+        hashes: list[str] = []
+        unknown: list[str] = []
+        for item in torrents:
+            if item.lower() in known:
+                hashes.append(item.lower())
+                continue
+            matches = [h for h, t in known.items() if t.get("name") == item]
+            if matches:
+                hashes.extend(matches)
+            else:
+                unknown.append(item)
+        if unknown:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="unknown_torrents",
+                translation_placeholders={"torrents": ", ".join(unknown)},
+            )
+        return hashes
