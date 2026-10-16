@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from datetime import timedelta
+from functools import partial
 import logging
 from typing import Any, override
 
@@ -18,7 +19,7 @@ from qbittorrentapi.torrents import TorrentStatusesT
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
 
@@ -38,13 +39,6 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
         """Initialize coordinator."""
         self.client = client
         self._is_alternative_mode_enabled = False
-        # self.main_data: dict[str, int] = {}
-        self.total_torrents: dict[str, int] = {}
-        self.active_torrents: dict[str, int] = {}
-        self.inactive_torrents: dict[str, int] = {}
-        self.paused_torrents: dict[str, int] = {}
-        self.seeding_torrents: dict[str, int] = {}
-        self.started_torrents: dict[str, int] = {}
 
         super().__init__(
             hass,
@@ -54,15 +48,13 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
             update_interval=timedelta(seconds=30),
         )
 
-    @override
-    async def _async_update_data(self) -> SyncMainDataDictionary:
+    async def _async_call[T](
+        self, func: Callable[..., T], *args: Any, **kwargs: Any
+    ) -> T:
+        """Run a blocking client call in the executor, mapping client errors."""
         try:
-            data = await self.hass.async_add_executor_job(self.client.sync_maindata)
-            self._is_alternative_mode_enabled = (
-                await self.hass.async_add_executor_job(
-                    self.client.transfer_speed_limits_mode
-                )
-                == "1"
+            return await self.hass.async_add_executor_job(
+                partial(func, *args, **kwargs)
             )
         except (LoginFailed, Forbidden403Error) as exc:
             raise HomeAssistantError(
@@ -71,6 +63,18 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
         except APIConnectionError as exc:
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="cannot_connect"
+            ) from exc
+
+    @override
+    async def _async_update_data(self) -> SyncMainDataDictionary:
+        try:
+            data = await self._async_call(self.client.sync_maindata)
+            self._is_alternative_mode_enabled = (
+                await self._async_call(self.client.transfer_speed_limits_mode) == "1"
+            )
+        except HomeAssistantError as exc:
+            raise UpdateFailed(
+                translation_domain=DOMAIN, translation_key=exc.translation_key
             ) from exc
         return data
 
@@ -88,33 +92,15 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
 
     async def get_torrents(self, torrent_filter: TorrentStatusesT) -> TorrentInfoList:
         """Async method to get QBittorrent torrents."""
-        try:
-            torrents = await self.hass.async_add_executor_job(
-                lambda: self.client.torrents_info(torrent_filter)
-            )
-        except (LoginFailed, Forbidden403Error) as exc:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="login_error"
-            ) from exc
-        except APIConnectionError as exc:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="cannot_connect"
-            ) from exc
+        return await self._async_call(
+            self.client.torrents_info, status_filter=torrent_filter
+        )
 
-        return torrents
-
-    async def async_run_action(self, func: Callable[..., Any], **kwargs: Any) -> None:
+    async def async_run_action(
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
         """Run a qBittorrent client action and refresh data afterwards."""
-        try:
-            await self.hass.async_add_executor_job(lambda: func(**kwargs))
-        except (LoginFailed, Forbidden403Error) as exc:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="login_error"
-            ) from exc
-        except APIConnectionError as exc:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="cannot_connect"
-            ) from exc
+        await self._async_call(func, *args, **kwargs)
         await self.async_request_refresh()
 
     def resolve_torrent_hashes(self, torrents: list[str]) -> list[str]:

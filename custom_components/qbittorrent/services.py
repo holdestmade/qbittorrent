@@ -61,7 +61,7 @@ def _get_coordinator(service_call: ServiceCall) -> QBittorrentDataCoordinator:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="invalid_entry_id",
-            translation_placeholders={"device_id": entry_id or ""},
+            translation_placeholders={"device_id": device_entry.id},
         )
 
     entry: QBittorrentConfigEntry | None = hass.config_entries.async_get_entry(entry_id)

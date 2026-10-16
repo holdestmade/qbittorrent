@@ -21,6 +21,11 @@
       "upload_speed": {
         "default": "mdi:cloud-upload"
       }
+    },
+    "switch": {
+      "alternative_speed": {
+        "default": "mdi:speedometer-slow"
+      }
     }
   },
   "services": {

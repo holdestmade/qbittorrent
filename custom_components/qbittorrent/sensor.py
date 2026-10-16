@@ -2,7 +2,6 @@
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-import logging
 from typing import Any, cast, override
 
 from homeassistant.components.sensor import (
@@ -13,15 +12,12 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import STATE_IDLE, UnitOfDataRate, UnitOfInformation
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, STATE_DOWNLOADING, STATE_SEEDING, STATE_UP_DOWN
+from .const import STATE_DOWNLOADING, STATE_SEEDING, STATE_UP_DOWN
 from .coordinator import QBittorrentConfigEntry, QBittorrentDataCoordinator
-
-_LOGGER = logging.getLogger(__name__)
+from .entity import QBittorrentEntity
 
 SENSOR_TYPE_CURRENT_STATUS = "current_status"
 SENSOR_TYPE_CONNECTION_STATUS = "connection_status"
@@ -57,7 +53,7 @@ def get_state(coordinator: QBittorrentDataCoordinator) -> str:
 
 
 def get_connection_status(coordinator: QBittorrentDataCoordinator) -> str:
-    """Get current download/upload state."""
+    """Get current connection status."""
     server_state = cast(Mapping, coordinator.data.get("server_state"))
     return cast(str, server_state.get("connection_status"))
 
@@ -101,7 +97,7 @@ def get_alltime_upload(coordinator: QBittorrentDataCoordinator) -> int | None:
 
 
 def get_global_ratio(coordinator: QBittorrentDataCoordinator) -> float:
-    """Get current download speed."""
+    """Get global share ratio."""
     server_state = cast(Mapping, coordinator.data.get("server_state"))
     return cast(float, server_state.get("global_ratio"))
 
@@ -197,9 +193,9 @@ SENSOR_TYPES: tuple[QBittorrentSensorEntityDescription, ...] = (
         translation_key="alltime_upload",
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.DATA_SIZE,
-        native_unit_of_measurement="B",
+        native_unit_of_measurement=UnitOfInformation.BYTES,
         suggested_display_precision=2,
-        suggested_unit_of_measurement="TiB",
+        suggested_unit_of_measurement=UnitOfInformation.TEBIBYTES,
         value_fn=get_alltime_upload,
     ),
     QBittorrentSensorEntityDescription(
@@ -218,7 +214,7 @@ SENSOR_TYPES: tuple[QBittorrentSensorEntityDescription, ...] = (
         key=SENSOR_TYPE_ACTIVE_TORRENTS,
         translation_key="active_torrents",
         value_fn=lambda coordinator: count_torrents_in_states(
-            coordinator, ["downloading", "uploading"]
+            coordinator, ["downloading", "uploading", "forcedDL", "forcedUP"]
         ),
     ),
     QBittorrentSensorEntityDescription(
@@ -232,7 +228,7 @@ SENSOR_TYPES: tuple[QBittorrentSensorEntityDescription, ...] = (
         key=SENSOR_TYPE_PAUSED_TORRENTS,
         translation_key="paused_torrents",
         value_fn=lambda coordinator: count_torrents_in_states(
-            coordinator, ["stoppedDL", "stoppedUP"]
+            coordinator, ["stoppedDL", "stoppedUP", "pausedDL", "pausedUP"]
         ),
     ),
     QBittorrentSensorEntityDescription(
@@ -271,27 +267,10 @@ async def async_setup_entry(
     )
 
 
-class QBittorrentSensor(CoordinatorEntity[QBittorrentDataCoordinator], SensorEntity):
+class QBittorrentSensor(QBittorrentEntity, SensorEntity):
     """Representation of a qBittorrent sensor."""
 
-    _attr_has_entity_name = True
     entity_description: QBittorrentSensorEntityDescription
-
-    def __init__(
-        self,
-        coordinator: QBittorrentDataCoordinator,
-        config_entry: QBittorrentConfigEntry,
-        entity_description: QBittorrentSensorEntityDescription,
-    ) -> None:
-        """Initialize the qBittorrent sensor."""
-        super().__init__(coordinator)
-        self.entity_description = entity_description
-        self._attr_unique_id = f"{config_entry.entry_id}-{entity_description.key}"
-        self._attr_device_info = DeviceInfo(
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, config_entry.entry_id)},
-            manufacturer="QBittorrent",
-        )
 
     @property
     @override
