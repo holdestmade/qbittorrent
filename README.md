@@ -40,8 +40,12 @@ Go to **Settings → Devices & services → Add integration**, search for **qBit
 | Username | Web UI username |
 | Password | Web UI password |
 | Verify SSL certificate | Turn off if the Web UI uses a self-signed certificate |
+| Home IP address | Optional. Your public IP address when *not* using a VPN |
+| Home IP address entity | Optional. An entity (sensor or input_text) whose state is your public IP address when not using a VPN |
 
 Data is refreshed every 30 seconds.
+
+The home IP settings can be changed later from the integration's **Configure** button. Set one of them (not both) to enable the **VPN connected** binary sensor.
 
 ## Entities
 
@@ -67,6 +71,29 @@ Data is refreshed every 30 seconds.
 | External IPv6 address | Last external IPv6 address detected by qBittorrent | No |
 
 The external address sensors read `last_external_address_v4` / `last_external_address_v6` from qBittorrent and show as unknown until qBittorrent has detected an address.
+
+### Binary sensors
+
+| Binary sensor | Description |
+| --- | --- |
+| VPN connected | On when qBittorrent's external IP address differs from your home IP address, off when it matches (qBittorrent is not behind the VPN). Only created when a home IP address or home IP entity is configured. |
+
+The sensor is unknown until qBittorrent has detected an external address, or while the home IP entity has no valid IP address. When an entity is used, the sensor updates as soon as that entity changes. A good source is a sensor from your router that reports its WAN IP address, as that does not go through the VPN.
+
+Example: stop all torrents if the VPN drops:
+
+```yaml
+automation:
+  - alias: Stop torrents when VPN drops
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.qbittorrent_vpn_connected
+        to: "off"
+    actions:
+      - action: button.press
+        target:
+          entity_id: button.qbittorrent_stop_all_torrents
+```
 
 ### Buttons
 

@@ -5,20 +5,33 @@
     },
     "error": {
       "cannot_connect": "Failed to connect",
-      "invalid_auth": "Invalid authentication"
+      "home_ip_and_entity": "Enter either a home IP address or a home IP address entity, not both.",
+      "invalid_auth": "Invalid authentication",
+      "invalid_ip": "Invalid IP address."
     },
     "step": {
       "user": {
         "data": {
+          "home_ip": "Home IP address",
+          "home_ip_entity": "Home IP address entity",
           "password": "Password",
           "url": "URL",
           "username": "Username",
           "verify_ssl": "Verify SSL certificate"
+        },
+        "data_description": {
+          "home_ip": "Your public IP address when not using the VPN. Leave empty to use an entity instead, or to skip the VPN connected sensor.",
+          "home_ip_entity": "An entity whose state is your public IP address when not using the VPN, for example a router's external IP sensor."
         }
       }
     }
   },
   "entity": {
+    "binary_sensor": {
+      "vpn_connected": {
+        "name": "VPN connected"
+      }
+    },
     "button": {
       "start_all_torrents": {
         "name": "Start all torrents"
@@ -114,6 +127,25 @@
     },
     "unknown_torrents": {
       "message": "No torrent found matching: {torrents}"
+    }
+  },
+  "options": {
+    "error": {
+      "home_ip_and_entity": "Enter either a home IP address or a home IP address entity, not both.",
+      "invalid_ip": "Invalid IP address."
+    },
+    "step": {
+      "init": {
+        "data": {
+          "home_ip": "Home IP address",
+          "home_ip_entity": "Home IP address entity"
+        },
+        "data_description": {
+          "home_ip": "Your public IP address when not using the VPN. Leave empty to use an entity instead, or to skip the VPN connected sensor.",
+          "home_ip_entity": "An entity whose state is your public IP address when not using the VPN, for example a router's external IP sensor."
+        },
+        "description": "Configure your home (non-VPN) IP address for the VPN connected sensor. The VPN is reported as disconnected when qBittorrent's external IP matches it."
+      }
     }
   },
   "services": {

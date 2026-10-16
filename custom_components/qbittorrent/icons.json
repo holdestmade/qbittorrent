@@ -1,5 +1,13 @@
 {
   "entity": {
+    "binary_sensor": {
+      "vpn_connected": {
+        "default": "mdi:vpn",
+        "state": {
+          "off": "mdi:shield-off-outline"
+        }
+      }
+    },
     "button": {
       "start_all_torrents": {
         "default": "mdi:play"

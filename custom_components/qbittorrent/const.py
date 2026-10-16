@@ -22,3 +22,6 @@ SERVICE_STOP_TORRENTS = "stop_torrents"
 SERVICE_DELETE_TORRENTS = "delete_torrents"
 ATTR_TORRENTS = "torrents"
 ATTR_DELETE_FILES = "delete_files"
+
+CONF_HOME_IP = "home_ip"
+CONF_HOME_IP_ENTITY = "home_ip_entity"
