@@ -37,6 +37,8 @@ SENSOR_TYPE_PAUSED_TORRENTS = "paused_torrents"
 SENSOR_TYPE_ACTIVE_TORRENTS = "active_torrents"
 SENSOR_TYPE_INACTIVE_TORRENTS = "inactive_torrents"
 SENSOR_TYPE_ERRORED_TORRENTS = "errored_torrents"
+SENSOR_TYPE_EXTERNAL_IP_V4 = "external_ip_v4"
+SENSOR_TYPE_EXTERNAL_IP_V6 = "external_ip_v6"
 
 
 def get_state(coordinator: QBittorrentDataCoordinator) -> str:
@@ -102,6 +104,18 @@ def get_global_ratio(coordinator: QBittorrentDataCoordinator) -> float:
     """Get current download speed."""
     server_state = cast(Mapping, coordinator.data.get("server_state"))
     return cast(float, server_state.get("global_ratio"))
+
+
+def get_external_ip_v4(coordinator: QBittorrentDataCoordinator) -> str | None:
+    """Get the last detected external IPv4 address."""
+    server_state = cast(Mapping, coordinator.data.get("server_state"))
+    return server_state.get("last_external_address_v4") or None
+
+
+def get_external_ip_v6(coordinator: QBittorrentDataCoordinator) -> str | None:
+    """Get the last detected external IPv6 address."""
+    server_state = cast(Mapping, coordinator.data.get("server_state"))
+    return server_state.get("last_external_address_v6") or None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -227,6 +241,17 @@ SENSOR_TYPES: tuple[QBittorrentSensorEntityDescription, ...] = (
         value_fn=lambda coordinator: count_torrents_in_states(
             coordinator, ["error", "missingFiles"]
         ),
+    ),
+    QBittorrentSensorEntityDescription(
+        key=SENSOR_TYPE_EXTERNAL_IP_V4,
+        translation_key="external_ip_v4",
+        value_fn=get_external_ip_v4,
+    ),
+    QBittorrentSensorEntityDescription(
+        key=SENSOR_TYPE_EXTERNAL_IP_V6,
+        translation_key="external_ip_v6",
+        value_fn=get_external_ip_v6,
+        entity_registry_enabled_default=False,
     ),
 )
 
