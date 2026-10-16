@@ -13,7 +13,7 @@
     "qbittorrentapi"
   ],
   "requirements": [
-    "qbittorrent-api==2026.5.1"
+    "qbittorrent-api>=2026.5.1"
   ],
   "version": "0.2.0"
 }
