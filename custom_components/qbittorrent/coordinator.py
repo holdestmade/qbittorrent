@@ -17,13 +17,18 @@ from qbittorrentapi import (
 from qbittorrentapi.torrents import TorrentStatusesT
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HassJob, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+# qBittorrent applies start/stop asynchronously, so refresh again shortly after
+# an action to pick up the new torrent states.
+ACTION_FOLLOW_UP_REFRESH_DELAY = 2
 
 type QBittorrentConfigEntry = ConfigEntry[QBittorrentDataCoordinator]
 
@@ -39,6 +44,10 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
         """Initialize coordinator."""
         self.client = client
         self._is_alternative_mode_enabled = False
+        self._unsub_follow_up_refresh: CALLBACK_TYPE | None = None
+        self._follow_up_refresh_job = HassJob(
+            self._async_follow_up_refresh, cancel_on_shutdown=True
+        )
 
         super().__init__(
             hass,
@@ -101,7 +110,26 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
     ) -> None:
         """Run a qBittorrent client action and refresh data afterwards."""
         await self._async_call(func, *args, **kwargs)
-        await self.async_request_refresh()
+        await self.async_refresh()
+
+        if self._unsub_follow_up_refresh:
+            self._unsub_follow_up_refresh()
+        self._unsub_follow_up_refresh = async_call_later(
+            self.hass, ACTION_FOLLOW_UP_REFRESH_DELAY, self._follow_up_refresh_job
+        )
+
+    async def _async_follow_up_refresh(self, _now: Any) -> None:
+        """Refresh data once qBittorrent has applied an action."""
+        self._unsub_follow_up_refresh = None
+        await self.async_refresh()
+
+    @override
+    async def async_shutdown(self) -> None:
+        """Cancel any pending follow-up refresh."""
+        await super().async_shutdown()
+        if self._unsub_follow_up_refresh:
+            self._unsub_follow_up_refresh()
+            self._unsub_follow_up_refresh = None
 
     def resolve_torrent_hashes(self, torrents: list[str]) -> list[str]:
         """Resolve torrent names or hashes to hashes of known torrents."""
