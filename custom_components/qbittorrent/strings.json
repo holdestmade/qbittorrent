@@ -61,6 +61,12 @@
         "name": "Errored torrents",
         "unit_of_measurement": "[%key:component::qbittorrent::entity::sensor::active_torrents::unit_of_measurement%]"
       },
+      "external_ip_v4": {
+        "name": "External IPv4 address"
+      },
+      "external_ip_v6": {
+        "name": "External IPv6 address"
+      },
       "global_ratio": {
         "name": "Global ratio"
       },

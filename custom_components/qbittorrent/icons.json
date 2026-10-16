@@ -4,6 +4,12 @@
       "download_speed": {
         "default": "mdi:cloud-download"
       },
+      "external_ip_v4": {
+        "default": "mdi:ip-network"
+      },
+      "external_ip_v6": {
+        "default": "mdi:ip-network"
+      },
       "upload_speed": {
         "default": "mdi:cloud-upload"
       }
