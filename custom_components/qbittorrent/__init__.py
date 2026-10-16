@@ -21,7 +21,7 @@ from .services import async_setup_services
 
 CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
-PLATFORMS = [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR, Platform.SWITCH]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
