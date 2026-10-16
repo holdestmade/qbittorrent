@@ -35,3 +35,46 @@ get_all_torrents:
             - "seeding"
             - "started"
             - "errored"
+start_torrents:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: qbittorrent
+    torrents:
+      required: true
+      example: "ubuntu-24.04-desktop-amd64.iso"
+      selector:
+        text:
+          multiple: true
+stop_torrents:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: qbittorrent
+    torrents:
+      required: true
+      example: "ubuntu-24.04-desktop-amd64.iso"
+      selector:
+        text:
+          multiple: true
+delete_torrents:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: qbittorrent
+    torrents:
+      required: true
+      example: "ubuntu-24.04-desktop-amd64.iso"
+      selector:
+        text:
+          multiple: true
+    delete_files:
+      default: false
+      selector:
+        boolean:

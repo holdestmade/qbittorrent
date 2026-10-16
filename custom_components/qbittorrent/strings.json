@@ -19,6 +19,14 @@
     }
   },
   "entity": {
+    "button": {
+      "start_all_torrents": {
+        "name": "Start all torrents"
+      },
+      "stop_all_torrents": {
+        "name": "Stop all torrents"
+      }
+    },
     "sensor": {
       "active_torrents": {
         "name": "Active torrents",
@@ -103,9 +111,30 @@
     },
     "login_error": {
       "message": "A login error occurred. Please check your username and password."
+    },
+    "unknown_torrents": {
+      "message": "No torrent found matching: {torrents}"
     }
   },
   "services": {
+    "delete_torrents": {
+      "description": "Removes one or more torrents.",
+      "fields": {
+        "device_id": {
+          "description": "[%key:component::qbittorrent::services::get_torrents::fields::device_id::description%]",
+          "name": "[%key:common::config_flow::data::device%]"
+        },
+        "torrents": {
+          "description": "[%key:component::qbittorrent::services::start_torrents::fields::torrents::description%]",
+          "name": "[%key:component::qbittorrent::services::start_torrents::fields::torrents::name%]"
+        },
+        "delete_files": {
+          "description": "Also delete the downloaded files from disk.",
+          "name": "Delete files"
+        }
+      },
+      "name": "Delete torrents"
+    },
     "get_all_torrents": {
       "description": "Gets a list of current torrents from all instances of qBittorrent",
       "fields": {
@@ -129,6 +158,34 @@
         }
       },
       "name": "Get torrents"
+    },
+    "start_torrents": {
+      "description": "Starts one or more torrents.",
+      "fields": {
+        "device_id": {
+          "description": "[%key:component::qbittorrent::services::get_torrents::fields::device_id::description%]",
+          "name": "[%key:common::config_flow::data::device%]"
+        },
+        "torrents": {
+          "description": "Names or hashes of the torrents.",
+          "name": "Torrents"
+        }
+      },
+      "name": "Start torrents"
+    },
+    "stop_torrents": {
+      "description": "Stops one or more torrents.",
+      "fields": {
+        "device_id": {
+          "description": "[%key:component::qbittorrent::services::get_torrents::fields::device_id::description%]",
+          "name": "[%key:common::config_flow::data::device%]"
+        },
+        "torrents": {
+          "description": "[%key:component::qbittorrent::services::start_torrents::fields::torrents::description%]",
+          "name": "[%key:component::qbittorrent::services::start_torrents::fields::torrents::name%]"
+        }
+      },
+      "name": "Stop torrents"
     }
   }
 }
