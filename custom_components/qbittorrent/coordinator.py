@@ -22,7 +22,14 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN
+from .const import (
+    ACTIVE_TORRENT_STATES,
+    CONF_ACTIVE_SCAN_INTERVAL,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_ACTIVE_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,6 +38,17 @@ _LOGGER = logging.getLogger(__name__)
 ACTION_FOLLOW_UP_REFRESH_DELAY = 2
 
 type QBittorrentConfigEntry = ConfigEntry[QBittorrentDataCoordinator]
+
+
+def _is_active(data: SyncMainDataDictionary) -> bool:
+    """Return whether any torrent is active or data is being transferred."""
+    server_state = data.get("server_state") or {}
+    if server_state.get("dl_info_speed") or server_state.get("up_info_speed"):
+        return True
+    torrents = data.get("torrents") or {}
+    return any(
+        torrent.get("state") in ACTIVE_TORRENT_STATES for torrent in torrents.values()
+    )
 
 
 class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
@@ -48,13 +66,20 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
         self._follow_up_refresh_job = HassJob(
             self._async_follow_up_refresh, cancel_on_shutdown=True
         )
+        options = config_entry.options
+        self._idle_interval = timedelta(
+            seconds=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        )
+        self._active_interval = timedelta(
+            seconds=options.get(CONF_ACTIVE_SCAN_INTERVAL, DEFAULT_ACTIVE_SCAN_INTERVAL)
+        )
 
         super().__init__(
             hass,
             _LOGGER,
             config_entry=config_entry,
             name=DOMAIN,
-            update_interval=timedelta(seconds=30),
+            update_interval=self._idle_interval,
         )
 
     async def _async_call[T](
@@ -85,6 +110,11 @@ class QBittorrentDataCoordinator(DataUpdateCoordinator[SyncMainDataDictionary]):
             raise UpdateFailed(
                 translation_domain=DOMAIN, translation_key=exc.translation_key
             ) from exc
+        # Poll faster while torrents are active; the next refresh is scheduled
+        # with this interval once this update completes.
+        self.update_interval = (
+            self._active_interval if _is_active(data) else self._idle_interval
+        )
         return data
 
     def set_alt_speed_enabled(self, is_enabled: bool) -> None:

@@ -43,9 +43,18 @@ Go to **Settings → Devices & services → Add integration**, search for **qBit
 | Home IP address | Optional. Your public IP address when *not* using a VPN |
 | Home IP address entity | Optional. An entity (sensor or input_text) whose state is your public IP address when not using a VPN |
 
-Data is refreshed every 30 seconds.
-
 The home IP settings can be changed later from the integration's **Configure** button. Set one of them (not both) to enable the **VPN connected** binary sensor.
+
+### Polling
+
+qBittorrent is polled every 30 seconds while nothing is happening, and every 5 seconds while any torrent is downloading, uploading, checking or moving (or data is being transferred). Both intervals can be changed under **Configure**:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| Polling interval | 30 s | Used when no torrents are active |
+| Polling interval while active | 5 s | Used while torrents are active |
+
+The faster interval kicks in at the next poll after a torrent becomes active, or straight away when a torrent is started from Home Assistant. Sensors are also refreshed immediately, and again 2 seconds later, after any start or stop button or action.
 
 ## Entities
 

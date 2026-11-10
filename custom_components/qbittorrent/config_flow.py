@@ -18,10 +18,23 @@ from homeassistant.core import callback
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
     TextSelector,
 )
 
-from .const import CONF_HOME_IP, CONF_HOME_IP_ENTITY, DEFAULT_NAME, DEFAULT_URL, DOMAIN
+from .const import (
+    CONF_ACTIVE_SCAN_INTERVAL,
+    CONF_HOME_IP,
+    CONF_HOME_IP_ENTITY,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_ACTIVE_SCAN_INTERVAL,
+    DEFAULT_NAME,
+    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_URL,
+    DOMAIN,
+)
 from .helpers import setup_client
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,7 +56,23 @@ USER_DATA_SCHEMA = probatio.Schema(
     }
 )
 
-OPTIONS_SCHEMA = probatio.Schema(HOME_IP_FIELDS)
+SCAN_INTERVAL_SELECTOR = NumberSelector(
+    NumberSelectorConfig(
+        min=1, max=3600, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="s"
+    )
+)
+
+OPTIONS_SCHEMA = probatio.Schema(
+    {
+        **HOME_IP_FIELDS,
+        probatio.Required(
+            CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL
+        ): SCAN_INTERVAL_SELECTOR,
+        probatio.Required(
+            CONF_ACTIVE_SCAN_INTERVAL, default=DEFAULT_ACTIVE_SCAN_INTERVAL
+        ): SCAN_INTERVAL_SELECTOR,
+    }
+)
 
 
 def _validate_home_ip(
@@ -123,13 +152,25 @@ class QbittorrentOptionsFlow(OptionsFlowWithReload):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage the home IP options."""
+        """Manage the home IP and polling options."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
             options, errors = _validate_home_ip(user_input)
             if not errors:
-                return self.async_create_entry(data=options)
+                return self.async_create_entry(
+                    data={
+                        **options,
+                        CONF_SCAN_INTERVAL: int(
+                            user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+                        ),
+                        CONF_ACTIVE_SCAN_INTERVAL: int(
+                            user_input.get(
+                                CONF_ACTIVE_SCAN_INTERVAL, DEFAULT_ACTIVE_SCAN_INTERVAL
+                            )
+                        ),
+                    }
+                )
 
         schema = self.add_suggested_values_to_schema(
             OPTIONS_SCHEMA, user_input or self.config_entry.options

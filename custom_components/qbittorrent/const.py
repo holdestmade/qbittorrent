@@ -25,3 +25,24 @@ ATTR_DELETE_FILES = "delete_files"
 
 CONF_HOME_IP = "home_ip"
 CONF_HOME_IP_ENTITY = "home_ip_entity"
+
+CONF_SCAN_INTERVAL = "scan_interval"
+CONF_ACTIVE_SCAN_INTERVAL = "active_scan_interval"
+DEFAULT_SCAN_INTERVAL = 30
+DEFAULT_ACTIVE_SCAN_INTERVAL = 5
+
+# Torrent states that mean qBittorrent is doing work worth polling faster for
+ACTIVE_TORRENT_STATES = frozenset(
+    {
+        "downloading",
+        "forcedDL",
+        "metaDL",
+        "forcedMetaDL",
+        "uploading",
+        "forcedUP",
+        "checkingDL",
+        "checkingUP",
+        "checkingResumeData",
+        "moving",
+    }
+)
