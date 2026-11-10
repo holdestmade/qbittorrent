@@ -78,6 +78,9 @@ The faster interval kicks in at the next poll after a torrent becomes active, or
 | Errored torrents | Torrents with errors or missing files | Yes |
 | External IPv4 address | Last external IPv4 address detected by qBittorrent | Yes |
 | External IPv6 address | Last external IPv6 address detected by qBittorrent | No |
+| Downloads finished | When the last downloading torrent is expected to finish | Yes |
+
+**Downloads finished** is a timestamp: the longest ETA among downloading torrents (including stalled ones), added to the current time and rounded to the minute. Torrents without an estimate (no peers, queued or paused) are left out, and the sensor is unknown when no torrent has one. Its `last_torrent` attribute names the torrent that finishes last, and `torrents` is how many torrents the estimate covers.
 
 The external address sensors read `last_external_address_v4` / `last_external_address_v6` from qBittorrent and show as unknown until qBittorrent has detected an address.
 

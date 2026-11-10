@@ -20,6 +20,9 @@
       "download_speed": {
         "default": "mdi:cloud-download"
       },
+      "downloads_finished": {
+        "default": "mdi:progress-clock"
+      },
       "external_ip_v4": {
         "default": "mdi:ip-network"
       },
