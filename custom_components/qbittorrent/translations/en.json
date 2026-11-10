@@ -78,6 +78,17 @@
       "download_speed_limit": {
         "name": "Download speed limit"
       },
+      "downloads_finished": {
+        "name": "Downloads finished",
+        "state_attributes": {
+          "last_torrent": {
+            "name": "Last torrent"
+          },
+          "torrents": {
+            "name": "Torrents"
+          }
+        }
+      },
       "errored_torrents": {
         "name": "Errored torrents",
         "unit_of_measurement": "torrents"

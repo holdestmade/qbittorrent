@@ -2,6 +2,7 @@
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any, cast, override
 
 from homeassistant.components.sensor import (
@@ -14,6 +15,7 @@ from homeassistant.const import STATE_IDLE, UnitOfDataRate, UnitOfInformation
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
+from homeassistant.util import dt as dt_util
 
 from .const import STATE_DOWNLOADING, STATE_SEEDING, STATE_UP_DOWN
 from .coordinator import QBittorrentConfigEntry, QBittorrentDataCoordinator
@@ -35,6 +37,14 @@ SENSOR_TYPE_INACTIVE_TORRENTS = "inactive_torrents"
 SENSOR_TYPE_ERRORED_TORRENTS = "errored_torrents"
 SENSOR_TYPE_EXTERNAL_IP_V4 = "external_ip_v4"
 SENSOR_TYPE_EXTERNAL_IP_V6 = "external_ip_v6"
+SENSOR_TYPE_DOWNLOADS_FINISHED = "downloads_finished"
+
+# Torrents that are still downloading, including ones waiting on peers
+DOWNLOADING_STATES = frozenset(
+    {"downloading", "forcedDL", "metaDL", "forcedMetaDL", "stalledDL"}
+)
+# qBittorrent reports this ETA (100 days) when it cannot estimate one
+ETA_INFINITE = 8640000
 
 
 def get_state(coordinator: QBittorrentDataCoordinator) -> str:
@@ -114,11 +124,44 @@ def get_external_ip_v6(coordinator: QBittorrentDataCoordinator) -> str | None:
     return server_state.get("last_external_address_v6") or None
 
 
+def _downloading_etas(coordinator: QBittorrentDataCoordinator) -> dict[str, int]:
+    """Return the ETA in seconds of each downloading torrent, keyed by name."""
+    torrents = cast(Mapping[str, Mapping], coordinator.data.get("torrents") or {})
+    return {
+        torrent.get("name", torrent_hash): eta
+        for torrent_hash, torrent in torrents.items()
+        if torrent.get("state") in DOWNLOADING_STATES
+        and isinstance(eta := torrent.get("eta"), int)
+        and 0 <= eta < ETA_INFINITE
+    }
+
+
+def get_downloads_finished(coordinator: QBittorrentDataCoordinator) -> datetime | None:
+    """Get when the last downloading torrent is expected to finish."""
+    if not (etas := _downloading_etas(coordinator)):
+        return None
+    finished = dt_util.utcnow() + timedelta(seconds=max(etas.values()))
+    # Round to the minute so small ETA changes don't create a new state every poll
+    return (finished + timedelta(seconds=30)).replace(second=0, microsecond=0)
+
+
+def get_downloads_finished_attributes(
+    coordinator: QBittorrentDataCoordinator,
+) -> dict[str, Any]:
+    """Get the slowest torrent and how many torrents the ETA covers."""
+    etas = _downloading_etas(coordinator)
+    return {
+        "last_torrent": max(etas, key=etas.__getitem__) if etas else None,
+        "torrents": len(etas),
+    }
+
+
 @dataclass(frozen=True, kw_only=True)
 class QBittorrentSensorEntityDescription(SensorEntityDescription):
     """Entity description class for qBittorent sensors."""
 
-    value_fn: Callable[[QBittorrentDataCoordinator], StateType]
+    value_fn: Callable[[QBittorrentDataCoordinator], StateType | datetime]
+    attributes_fn: Callable[[QBittorrentDataCoordinator], dict[str, Any]] | None = None
 
 
 SENSOR_TYPES: tuple[QBittorrentSensorEntityDescription, ...] = (
@@ -249,6 +292,13 @@ SENSOR_TYPES: tuple[QBittorrentSensorEntityDescription, ...] = (
         value_fn=get_external_ip_v6,
         entity_registry_enabled_default=False,
     ),
+    QBittorrentSensorEntityDescription(
+        key=SENSOR_TYPE_DOWNLOADS_FINISHED,
+        translation_key="downloads_finished",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=get_downloads_finished,
+        attributes_fn=get_downloads_finished_attributes,
+    ),
 )
 
 
@@ -274,9 +324,17 @@ class QBittorrentSensor(QBittorrentEntity, SensorEntity):
 
     @property
     @override
-    def native_value(self) -> StateType:
+    def native_value(self) -> StateType | datetime:
         """Return the value of the sensor."""
         return self.entity_description.value_fn(self.coordinator)
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return extra attributes, if the sensor has any."""
+        if attributes_fn := self.entity_description.attributes_fn:
+            return attributes_fn(self.coordinator)
+        return None
 
 
 def count_torrents_in_states(
