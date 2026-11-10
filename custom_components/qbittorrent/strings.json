@@ -137,14 +137,18 @@
     "step": {
       "init": {
         "data": {
+          "active_scan_interval": "Polling interval while active",
           "home_ip": "[%key:component::qbittorrent::config::step::user::data::home_ip%]",
-          "home_ip_entity": "[%key:component::qbittorrent::config::step::user::data::home_ip_entity%]"
+          "home_ip_entity": "[%key:component::qbittorrent::config::step::user::data::home_ip_entity%]",
+          "scan_interval": "Polling interval"
         },
         "data_description": {
+          "active_scan_interval": "How often to poll qBittorrent, in seconds, while torrents are downloading, uploading, checking or moving.",
           "home_ip": "[%key:component::qbittorrent::config::step::user::data_description::home_ip%]",
-          "home_ip_entity": "[%key:component::qbittorrent::config::step::user::data_description::home_ip_entity%]"
+          "home_ip_entity": "[%key:component::qbittorrent::config::step::user::data_description::home_ip_entity%]",
+          "scan_interval": "How often to poll qBittorrent, in seconds, when no torrents are active."
         },
-        "description": "Configure your home (non-VPN) IP address for the VPN connected sensor. The VPN is reported as disconnected when qBittorrent's external IP matches it."
+        "description": "Set your home (non-VPN) IP address for the VPN connected sensor, which reports the VPN as disconnected when qBittorrent's external IP matches it, and how often qBittorrent is polled."
       }
     }
   },

@@ -137,14 +137,18 @@
     "step": {
       "init": {
         "data": {
+          "active_scan_interval": "Polling interval while active",
           "home_ip": "Home IP address",
-          "home_ip_entity": "Home IP address entity"
+          "home_ip_entity": "Home IP address entity",
+          "scan_interval": "Polling interval"
         },
         "data_description": {
+          "active_scan_interval": "How often to poll qBittorrent, in seconds, while torrents are downloading, uploading, checking or moving.",
           "home_ip": "Your public IP address when not using the VPN. Leave empty to use an entity instead, or to skip the VPN connected sensor.",
-          "home_ip_entity": "An entity whose state is your public IP address when not using the VPN, for example a router's external IP sensor."
+          "home_ip_entity": "An entity whose state is your public IP address when not using the VPN, for example a router's external IP sensor.",
+          "scan_interval": "How often to poll qBittorrent, in seconds, when no torrents are active."
         },
-        "description": "Configure your home (non-VPN) IP address for the VPN connected sensor. The VPN is reported as disconnected when qBittorrent's external IP matches it."
+        "description": "Set your home (non-VPN) IP address for the VPN connected sensor, which reports the VPN as disconnected when qBittorrent's external IP matches it, and how often qBittorrent is polled."
       }
     }
   },
